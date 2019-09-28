@@ -33,6 +33,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -43,7 +44,6 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -53,6 +53,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
@@ -67,6 +68,8 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -192,13 +195,35 @@ public class CameraNcnnFragment extends Fragment
     private ImageReader mImageReader;
 
 
-    private double[] mDetect_result;
+    private float[] mDetect_result;
     private boolean mDetect_isbusy = false;
 
-    /**
-     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
-     * still image is ready to be saved.
-     */
+    private Bitmap mBitmap;
+    private Bitmap capturefaceimg;
+    private Bitmap targetfaceimg;
+    private float facesimilar = 0;
+    private float[] capturefaceimg_feature = null;
+    private float[] targetfaceimg_feature = null;
+
+
+
+    private void notifyimgupdate() {
+        Message message = Message.obtain(imgupdatehandle);
+        message.sendToTarget();
+    }
+
+    // handler对象，用来接收消息
+    private Handler imgupdatehandle = new Handler() {
+        @Override
+        public void handleMessage(android.os.Message msg) {
+            // 处理从子线程发送过来的消息
+            captureface.setImageBitmap(capturefaceimg);
+            resulttextview.setText(getString(R.string.equal) + ": " + ((float)Math.round(facesimilar *10000))/100 + "%");
+
+
+        }
+    };
+
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
 
@@ -223,20 +248,59 @@ public class CameraNcnnFragment extends Fragment
 
             byte[] yuv = yuvbuffer.array();
 
+            mBitmap = mSurfaceView.yuvToBitmap(yuv,width,height);
+            mSurfaceView.Draw(mBitmap, mDetect_result, 90);
+
             //split process function to prevent img reflash stop
             if(!mDetect_isbusy)
             {
                 mDetect_isbusy = true;
-                new Thread(new Runnable() {
-                    public void run() {
-                        mDetect_result = ncnnprocess_imgyuv(yuv, width, height);
-                        mDetect_isbusy = false;
+                new Thread(() -> {
+                    float[] result = ncnnprocess_imgyuv(yuv, width, height);
+                    if(result != null) {
+                        mDetect_result = Arrays.copyOfRange(result, 128, result.length);
+                        Log.d(TAG, "detect result " + mDetect_result.length + " "
+                                + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " ");
+
+                        int x,y,xe,ye;
+                        double expand = 0.05f;
+                        float[] firstface = Arrays.copyOfRange(result, 128, 128+20);;
+
+                        firstface[0] -= expand;
+                        firstface[1] -= expand;
+                        firstface[2] += expand;
+                        firstface[3] += expand;
+
+                        for(int i = 0 ; i < 4 ; i++)
+                        {
+                            if(firstface[i] > 1)
+                                firstface[i] = 1;
+                            if(firstface[i] < 0)
+                                firstface[i] = 0;
+                        }
+
+                        x = (int)(firstface[0] * mBitmap.getWidth());
+                        y = (int)(firstface[1] * mBitmap.getHeight());
+                        xe = (int)(firstface[2] * mBitmap.getWidth());
+                        ye = (int)(firstface[3] * mBitmap.getHeight());
+
+                        capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe-x, ye-y);
+                        capturefaceimg_feature =  Arrays.copyOfRange(result, 0, 128);;
+
+                        if(targetfaceimg_feature != null)
+                        {
+                            facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
+                        }
+                        notifyimgupdate();
                     }
+                    mDetect_isbusy = false;
                 }).start();
             }
-            if(mDetect_result != null) {
-                mSurfaceView.Draw(yuv, width, height, mDetect_result, 90);
-            }
+
+
+
+
+
 
             im.close();
         }
@@ -339,24 +403,30 @@ public class CameraNcnnFragment extends Fragment
         return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
     }
 
+    private ImageView captureface;
+    private ImageView targetface;
+    private TextView resulttextview;
+
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         //view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
+        view.findViewById(R.id.camswitch).setOnClickListener(this);
+        view.findViewById(R.id.capture).setOnClickListener(this);
+        captureface = (ImageView)view.findViewById(R.id.captureface);
+        targetface = (ImageView)view.findViewById(R.id.targetface);
         mSurfaceView = (AutoFitSurfaceView) view.findViewById(R.id.texture);
-
+        resulttextview = (TextView)view.findViewById(R.id.resulttext);
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initssd();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        finissd();
     }
 
     @Override
@@ -403,6 +473,7 @@ public class CameraNcnnFragment extends Fragment
         }
     }
 
+    Integer curfacing = CameraCharacteristics.LENS_FACING_FRONT;
     /**
      * Sets up member variables related to camera.
      *
@@ -420,7 +491,7 @@ public class CameraNcnnFragment extends Fragment
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                if (facing != null && facing != curfacing) {
                     continue;
                 }
 
@@ -722,10 +793,37 @@ public class CameraNcnnFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             //
-            //case R.id.picture: {
-            //    takePicture();
-            //    break;
-            //}
+            case R.id.capture: {
+                if(capturefaceimg != null) {
+                    targetfaceimg = capturefaceimg;
+                    targetfaceimg_feature = capturefaceimg_feature;
+                    targetface.setImageBitmap(targetfaceimg);
+                }
+                else
+                {
+                    Activity activity = getActivity();
+                    if (null != activity) {
+                        new AlertDialog.Builder(activity)
+                                .setMessage(R.string.faceisnotdetect)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                    }
+                }
+                break;
+            }
+            case R.id.camswitch: {
+                closeCamera();
+                if(curfacing != CameraCharacteristics.LENS_FACING_BACK)
+                {
+                    curfacing = CameraCharacteristics.LENS_FACING_BACK;
+                }
+                else
+                {
+                    curfacing = CameraCharacteristics.LENS_FACING_FRONT;
+                }
+                openCamera(displaySize.x, displaySize.y);
+                break;
+            }
             case R.id.info: {
                 Activity activity = getActivity();
                 if (null != activity) {
@@ -869,14 +967,12 @@ public class CameraNcnnFragment extends Fragment
     }
 
 
-    private double[] ncnnprocess_imgyuv(byte[] data, int width, int height)
+    private float[] ncnnprocess_imgyuv(byte[] data, int width, int height)
     {
-
-        double[] output = new double[24*6];
-        return detectyonly(data, width, height, output);
+        return detectface(data, width, height);
     }
 
-    public native void initssd();
-    public native void finissd();
-    public native double[] detectyonly(byte[] data, int width, int height, double[] output);
+    public native float[] detectface(byte[] data, int width, int height);
+    public native float compareface(float[] face0, float[] face1);
+
 }

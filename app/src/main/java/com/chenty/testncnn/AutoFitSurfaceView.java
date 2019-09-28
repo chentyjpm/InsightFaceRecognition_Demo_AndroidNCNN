@@ -44,7 +44,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
     private Paint paint;
-    private Bitmap mBitmap;
+
     private RenderScript rs;
     private ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
     private Type.Builder yuvType, rgbaType;
@@ -116,60 +116,41 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
         mCanvas.drawText(string, rect.left + 4, rect.top + 28, paint);
     }
 
-    static private int class_color[] = {
-            Color.YELLOW,Color.GREEN,Color.BLUE,Color.YELLOW,Color.BLUE,
-            Color.YELLOW,Color.BLUE,Color.BLUE,Color.YELLOW,Color.YELLOW,
-            Color.YELLOW,Color.YELLOW,Color.YELLOW,Color.YELLOW,Color.YELLOW,
-            Color.RED,Color.YELLOW,Color.YELLOW,Color.YELLOW,Color.YELLOW,
-            Color.YELLOW,
-    };
-    static private String class_names[] = {
-            "background", "aeroplane", "bicycle", "bird", "boat",
-            "bottle", "bus", "car", "cat", "chair",
-            "cow", "diningtable", "dog", "horse", "motorbike",
-            "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
-    };
-
-    public void DrawDetect(double[] data, int width, int height, int rolatedeg) {
+    public void DrawDetectFace(float[] data, int width, int height, int rolatedeg) {
         int i,objcnt;
         int t,x,y,xe,ye;
         int prob;
-        objcnt = 24;
+        int gap = 20;
+        objcnt = data.length/gap;
         for (i = 0 ; i < objcnt ; i++)
         {
-            if (data[i*6] > 0)
-            {
-                t = (int) data[i*6];
-                prob = (int)(data[i*6 + 1] * (100));
-                x = (int) (data[i*6 + 2] * (width));
-                y = (int) (data[i*6 + 3] * (height));
-                xe = (int) (data[i*6 + 4] * (width));
-                ye = (int) (data[i*6 + 5] * (height));
+            x = (int) (data[i*gap + 0] * (width));
+            y = (int) (data[i*gap + 1] * (height));
+            xe = (int) (data[i*gap + 2] * (width));
+            ye = (int) (data[i*gap + 3] * (height));
+            Log.d(TAG, "obj" + x + " " + y + " " + xe + " " + ye);
 
-                if(x < 0) {
-                    x = 0;
-                }
-                if(y < 0) {
-                    y = 0;
-                }
-                if(xe > width) {
-                    xe = width;
-                }
-                if(ye > height) {
-                    ye = height;
-                }
-                Log.d(TAG, "obj" + i +" " + t +" " + prob+ " pos" + x + " " + y + " " + xe + " " + ye);
-                DrawRect(new Rect(x,y,xe,ye),class_color[t], class_names[t] + " " + prob);
+            if(x < 0) {
+                x = 0;
             }
+            if(y < 0) {
+                y = 0;
+            }
+            if(xe > width) {
+                xe = width;
+            }
+            if(ye > height) {
+                ye = height;
+            }
+            //
+            DrawRect(new Rect(x,y,xe,ye),Color.RED, "face");
 
         }
     }
 
-    public void Draw(byte[] data, int width, int height, double[] result, int rolatedeg) {
-        Log.d(TAG, "draw "+data.length +" " + width + "X" + height);
-        if (data != null) {
+    public void Draw(Bitmap mBitmap, float[] result, int rolatedeg) {
+       {
 
-            mBitmap = yuvToBitmap(data,width,height);
             if (mBitmap == null) {
                 Log.d(TAG, "data data is to bitmap error");
                 return;
@@ -180,25 +161,23 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                 mWidth = mCanvas.getWidth();
                 mHeight = mCanvas.getHeight();
                 Log.d(TAG, "canvas size is " +  mWidth+ " " + mHeight);
-                float scaleWidth = mWidth/width;
-                float scaleHeight = mHeight/height;
+                float scaleWidth = mWidth/mBitmap.getWidth();
+                float scaleHeight = mHeight/mBitmap.getHeight();
                 Log.d(TAG, "scale size is " +  scaleWidth+ " " +  scaleHeight);
 
 
                 Matrix matrix = new Matrix();
                 matrix.setScale(scaleWidth, scaleHeight);
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
-
-                DrawDetect(result, (int)mWidth, (int)mHeight, rolatedeg);
+                if(result !=null) {
+                    DrawDetectFace(result, (int) mWidth, (int) mHeight, rolatedeg);
+                }
             }catch (Exception e){
                 Log.d(TAG, "e="+e);
                 mHolder.unlockCanvasAndPost(mCanvas);
                 return;
             }
             mHolder.unlockCanvasAndPost(mCanvas);
-        } else {
-            Log.d(TAG, "data data is null");
-            return;
         }
     }
 

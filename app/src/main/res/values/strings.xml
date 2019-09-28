@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">RTCAMERA_SSD</string>
+    <string name="app_name">NcnnInsightFace</string>
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission. please restart it</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
@@ -7,11 +7,15 @@
     <string name="intro_message">
         <![CDATA[
 
-            This sample use ncnn and mobilenet ssd
+            This sample use ncnn and insight_face
             Code by Christopher (https://github.com/chentyjpm)
 
             For any problem contact me via QQ:317974925
 
         ]]>
     </string>
+    <string name="targetface">TargetFace</string>
+    <string name="captureface">CaptureFace</string>
+    <string name="faceisnotdetect">face is not detect please try again</string>
+    <string name="equal">Equal</string>
 </resources>

@@ -14,6 +14,7 @@
  limitations under the License.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -26,15 +27,89 @@
         android:layout_alignParentTop="true" />
 
 
-    <ImageButton
-        android:id="@+id/info"
-        style="@android:style/Widget.Material.Light.Button.Borderless"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+    <LinearLayout
+        android:layout_width="144dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
-        android:layout_gravity="center_vertical|right"
-        android:contentDescription="@string/description_info"
-        android:padding="20dp"
-        android:src="@drawable/ic_action_info" />
+        android:layout_alignParentBottom="true"
+        android:keepScreenOn="true"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/capture"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                app:srcCompat="@android:drawable/ic_menu_camera" />
+
+            <ImageButton
+                android:id="@+id/camswitch"
+                style="@android:style/Widget.Material.Light.Button.Borderless"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|right"
+                android:contentDescription="@string/description_info"
+                android:padding="20dp"
+                android:src="@android:drawable/ic_menu_set_as" />
+
+            <ImageButton
+                android:id="@+id/info"
+                style="@android:style/Widget.Material.Light.Button.Borderless"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|right"
+                android:layout_weight="1"
+                android:contentDescription="@string/description_info"
+                android:padding="20dp"
+                android:src="@android:drawable/ic_dialog_info" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="96dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/capturetext"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:text="@string/captureface" />
+
+            <ImageView
+                android:id="@+id/captureface"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                app:srcCompat="@android:color/transparent" />
+
+            <TextView
+                android:id="@+id/targettext"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:text="@string/targetface" />
+
+            <ImageView
+                android:id="@+id/targetface"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                app:srcCompat="@android:color/transparent" />
+
+            <TextView
+                android:id="@+id/resulttext"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:text="TextView" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
 
 </RelativeLayout>
