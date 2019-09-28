@@ -1,19 +1,23 @@
-# NCNN
-	
-	ncnn 是腾讯提供的移动端框架 非常适合在手机玩
-	
-	在研究了一段时间的 ncnn后 准备做一个安卓的demo 以便更好的熟悉和使用 NCNN
 
-## 先上APP和效果
-    app地址 ：https://pan.baidu.com/s/1MX8GnM3xR4u0dcyw7iVSRg
-![](http://www.chenty.com/wp-content/uploads/2019/08/Screenshot_2019-08-16-13-54-38-377_com.chenty.tes_-1024x473.png) 
-![](http://www.chenty.com/wp-content/uploads/2019/08/Screenshot_2019-08-16-12-07-00-002_com.chenty.tes_-1024x473.png)
+## APP实现的功能
 
-第二张图没框准是因为人在动 ，计算耗时还是比较长 大约需要1.几秒
+1. 框选出人脸和5个landmark(LandMark太惊悚 没绘制出来)
+2. 裁剪出人脸对场景中的第一个人脸解析特征向量
+3. 与存储在手机中的人脸的特征向量比较，确认是否为同一人
+
+
+## APK和效果
+    app地址 ：
+
+
+
+# 以下内容引用 MobileSSD的工程说明 大体流程是一样的
+
+https://github.com/chentyjpm/MobileNetSSD_Demo_AndroidNCNN
 
 ## 安卓程序编写过程
 
-    程序本身并不复杂 但是搞安卓的过程中发现 摄像头获取下视频真的是累的要去死
+    程序本身并不复杂 但是搞安卓的过程中发下摄像头获取下视频真的是累的要去死
     
     
 ### 程序框架
