@@ -7,9 +7,10 @@
 
 
 ## APK和效果
-    app地址 ：
 
+![image](https://github.com/chentyjpm/InsightFaceRecognition_Demo_AndroidNCNN/blob/master/imgs/sample.gif)
 
+app地址 ：https://pan.baidu.com/s/14v-uFwRprGvnsj2NANNjVg
 
 # 以下内容引用 MobileSSD的工程说明 大体流程是一样的
 
