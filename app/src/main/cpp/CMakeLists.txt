@@ -18,7 +18,8 @@ endif()
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-include_directories(./ncnn-android-lib/include)
+include_directories(./ncnn-android-lib/include/ncnn)
+
 
 file(GLOB arcface_files "./arcface/*.cpp")
 
@@ -48,7 +49,9 @@ find_library( # Sets the name of the path variable.
 
         # Specifies the name of the NDK library that
         # you want CMake to locate.
-        log)
+        log
+        android # fix assert
+        )
 
 
 # Specifies libraries CMake should link to your target library. You
@@ -57,7 +60,7 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         native-lib
-
+        android
         ${CMAKE_SOURCE_DIR}/ncnn-android-lib/${ANDROID_ABI}/libncnn.a
 
         # Links the target library to the log library

@@ -23,11 +23,16 @@
 #include "mat.h"
 #include "option.h"
 
+#if __ANDROID_API__ >= 9
+#include <android/asset_manager.h>
+#endif // __ANDROID_API__ >= 9
+
 namespace ncnn {
 
 #if NCNN_VULKAN
 class VkCompute;
 #endif // NCNN_VULKAN
+class DataReader;
 class Extractor;
 class Net
 {
@@ -47,6 +52,8 @@ public:
 
     // set gpu device by device handle, no owner transfer
     void set_vulkan_device(const VulkanDevice* vkdev);
+
+    const VulkanDevice* vulkan_device() const;
 #endif // NCNN_VULKAN
 
 #if NCNN_STRING
@@ -57,6 +64,14 @@ public:
     // register custom layer by layer type
     // return 0 if success
     int register_custom_layer(int index, layer_creator_func creator);
+
+#if NCNN_STRING
+    int load_param(const DataReader& dr);
+#endif // NCNN_STRING
+
+    int load_param_bin(const DataReader& dr);
+
+    int load_model(const DataReader& dr);
 
 #if NCNN_STDIO
 #if NCNN_STRING
@@ -88,6 +103,21 @@ public:
     // memory pointer must be 32-bit aligned
     // return bytes consumed
     int load_model(const unsigned char* mem);
+
+#if __ANDROID_API__ >= 9
+#if NCNN_STRING
+    // convenient load network structure from android asset plain param file
+    int load_param(AAsset* asset);
+    int load_param(AAssetManager* mgr, const char* assetpath);
+#endif // NCNN_STRING
+    // convenient load network structure from android asset binary param file
+    int load_param_bin(AAsset* asset);
+    int load_param_bin(AAssetManager* mgr, const char* assetpath);
+
+    // convenient load network weight data from android asset model file
+    int load_model(AAsset* asset);
+    int load_model(AAssetManager* mgr, const char* assetpath);
+#endif // __ANDROID_API__ >= 9
 
     // unload network structure and weight data
     void clear();
@@ -140,12 +170,15 @@ protected:
     ncnn::Layer* cast_float16_to_float32;
     ncnn::Layer* packing_pack1;
     ncnn::Layer* packing_pack4;
+    ncnn::Layer* packing_pack8;
 #endif // NCNN_VULKAN
 };
 
 class Extractor
 {
 public:
+    ~Extractor();
+
     // enable light mode
     // intermediate blob will be recycled when enabled
     // enabled by default
@@ -156,8 +189,20 @@ public:
     // default count is system depended
     void set_num_threads(int num_threads);
 
+    // set blob memory allocator
+    void set_blob_allocator(Allocator* allocator);
+
+    // set workspace memory allocator
+    void set_workspace_allocator(Allocator* allocator);
+
 #if NCNN_VULKAN
     void set_vulkan_compute(bool enable);
+
+    void set_blob_vkallocator(VkAllocator* allocator);
+
+    void set_workspace_vkallocator(VkAllocator* allocator);
+
+    void set_staging_vkallocator(VkAllocator* allocator);
 #endif // NCNN_VULKAN
 
 #if NCNN_STRING
@@ -200,7 +245,7 @@ public:
 
 protected:
     friend Extractor Net::create_extractor() const;
-    Extractor(const Net* net, int blob_count);
+    Extractor(const Net* net, size_t blob_count);
 
 private:
     const Net* net;
@@ -208,6 +253,9 @@ private:
     Option opt;
 
 #if NCNN_VULKAN
+    VkAllocator* local_blob_vkallocator;
+    VkAllocator* local_staging_vkallocator;
+
     std::vector<VkMat> blob_mats_gpu;
 #endif // NCNN_VULKAN
 };
